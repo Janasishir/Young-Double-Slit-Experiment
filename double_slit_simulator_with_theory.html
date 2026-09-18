@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Young's Double-Slit Experiment</title>
+<style>
+  :root{
+    --bg:#07111f;
+    --panel:#0d1c30;
+    --panel2:#10263d;
+    --line:#294762;
+    --text:#eef7ff;
+    --muted:#a8bfd5;
+    --accent:#35f2a0;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:linear-gradient(135deg,#030811,#0a1729 55%,#06101d);
+    color:var(--text);
+  }
+  header{
+    padding:22px 28px;
+    border-bottom:1px solid var(--line);
+    background:#071321;
+  }
+  header h1{margin:0 0 7px;font-size:clamp(22px,3vw,34px)}
+  header p{margin:0;color:var(--muted)}
+  .layout{
+    display:grid;
+    grid-template-columns:260px minmax(0,1fr);
+    gap:18px;
+    max-width:1500px;
+    margin:auto;
+    padding:18px;
+  }
+  .controls,.card{
+    background:rgba(13,28,48,.96);
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:0 8px 28px rgba(0,0,0,.25);
+  }
+  .controls{
+    padding:16px;
+    align-self:start;
+    position:sticky;
+    top:14px;
+  }
+  .controls h2{font-size:18px;margin:0 0 14px;color:var(--accent)}
+  label{display:block;font-size:13px;color:var(--muted);margin:13px 0 6px}
+  input,select,button{
+    width:100%;
+    border:1px solid #3a5875;
+    border-radius:8px;
+    background:#071321;
+    color:var(--text);
+    padding:9px;
+    font-size:14px;
+  }
+  input[type=range]{padding:0;accent-color:var(--accent)}
+  .value{float:right;color:var(--accent);font-weight:bold}
+  button{
+    margin-top:14px;
+    background:var(--accent);
+    color:#03140d;
+    border:none;
+    font-weight:bold;
+    cursor:pointer;
+  }
+  button.secondary{background:#19344d;color:var(--text);border:1px solid #3a5875}
+  .main{min-width:0;display:grid;gap:18px}
+  .card{padding:16px}
+  .card h2{margin:0 0 12px;font-size:20px}
+  .canvas-wrap{
+    width:100%;
+    overflow:hidden;
+    border:1px solid #294762;
+    border-radius:10px;
+    background:#02060b;
+  }
+  canvas{display:block;width:100%;height:auto}
+  #intensityCanvas{height:440px}
+  #screenCanvas{height:300px}
+  #slitCanvas{height:260px}
+  .legend{
+    display:flex;gap:18px;flex-wrap:wrap;
+    color:var(--muted);font-size:13px;margin-top:10px
+  }
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px}
+  .result{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px
+  }
+  .metric{
+    padding:12px;border:1px solid var(--line);border-radius:9px;background:#081727
+  }
+  .metric small{display:block;color:var(--muted);margin-bottom:5px}
+  .metric strong{font-size:18px;color:var(--accent)}
+  .equations{
+    color:#d8e9f7;line-height:1.9;font-family:Georgia,serif;font-size:17px
+  }
+  .note{font-size:13px;color:var(--muted);line-height:1.6}
+  .created-by{margin-top:10px!important;color:#35f2a0!important;font-size:14px}
+  .tabs{
+    display:flex;gap:10px;flex-wrap:wrap;
+    max-width:1500px;margin:0 auto;padding:16px 18px 0;
+  }
+  .tab{
+    width:auto;margin:0;padding:11px 18px;
+    background:#17334d;color:var(--text);
+    border:1px solid #3a5875;border-radius:9px;
+    cursor:pointer;font-weight:bold;
+  }
+  .tab.active{background:var(--accent);color:#03140d;border-color:var(--accent)}
+  .theory{
+    max-width:1180px;margin:18px auto;padding:26px;
+    line-height:1.7;
+  }
+  .theory h2{color:var(--accent);margin-top:0}
+  .theory h3{color:#8de8ff;margin-top:25px}
+  .theory li{margin:8px 0}
+  .equation-box{
+    background:#071321;border-left:4px solid var(--accent);
+    padding:12px 18px;border-radius:8px;
+    font-family:Georgia,serif;font-size:18px;
+    overflow-x:auto;
+  }
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr}
+    .controls{position:static}
+    .result{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Young's Double-Slit Interference Simulator</h1>
+  <p>Change the wavelength, slit separation, slit width and screen distance. The intensity curve, coloured screen pattern and slit geometry update immediately.</p>
+  <p class="created-by">Created by <strong>Sishir</strong></p>
+</header>
+
+<nav class="tabs" aria-label="Website sections">
+  <button class="tab active" data-tab="simulator">Live Simulator</button>
+  <button class="tab secondary" data-tab="theory">Theory & Experimental Procedure</button>
+</nav>
+
+<div id="simulatorTab">
+<div class="layout">
+  <aside class="controls">
+    <h2>Parameters</h2>
+
+    <label>Wavelength λ <span class="value" id="lambdaValue"></span></label>
+    <input id="lambda" type="range" min="380" max="700" step="1" value="632">
+
+    <label>Slit separation d (mm) <span class="value" id="dValue"></span></label>
+    <input id="d" type="range" min="0.10" max="2.50" step="0.01" value="0.50">
+
+    <label>Slit width a (mm) <span class="value" id="aValue"></span></label>
+    <input id="a" type="range" min="0.02" max="0.50" step="0.01" value="0.08">
+
+    <label>Screen distance L (m) <span class="value" id="LValue"></span></label>
+    <input id="L" type="range" min="0.20" max="5.00" step="0.05" value="1.00">
+
+    <label>Screen width (mm) <span class="value" id="widthValue"></span></label>
+    <input id="screenWidth" type="range" min="10" max="120" step="1" value="70">
+
+    <label>Intensity display</label>
+    <select id="displayMode">
+      <option value="combined">Diffraction × Interference</option>
+      <option value="interference">Interference only</option>
+      <option value="diffraction">Diffraction envelope only</option>
+    </select>
+
+    <button id="reset">Reset parameters</button>
+    <button class="secondary" id="download">Save intensity image</button>
+
+    <p class="note">
+      Approximation: Fraunhofer diffraction and small-angle geometry are used. The screen pattern is a visual representation of normalized intensity.
+    </p>
+  </aside>
+
+  <main class="main">
+    <section class="card">
+      <h2>1. Intensity distribution</h2>
+      <div class="canvas-wrap"><canvas id="intensityCanvas" width="1100" height="440"></canvas></div>
+      <div class="legend">
+        <span><span class="dot" id="dotCombined"></span>Combined intensity</span>
+        <span><span class="dot" id="dotEnvelope"></span>Diffraction envelope</span>
+        <span><span class="dot" id="dotInterference"></span>Interference factor</span>
+      </div>
+      <div class="result">
+        <div class="metric"><small>Fringe spacing near centre</small><strong id="fringe"></strong></div>
+        <div class="metric"><small>First diffraction minimum</small><strong id="minimum"></strong></div>
+        <div class="metric"><small>Light colour</small><strong id="colourName"></strong></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. Coloured screen pattern</h2>
+      <div class="canvas-wrap"><canvas id="screenCanvas" width="1100" height="300"></canvas></div>
+      <p class="note">The displayed colour changes with wavelength. Brightness is calculated from the double-slit intensity function.</p>
+    </section>
+
+    <section class="card">
+      <h2>3. Double-slit geometry and changing slit distance</h2>
+      <div class="canvas-wrap"><canvas id="slitCanvas" width="1100" height="260"></canvas></div>
+      <p class="note">The separation between the two slit centres is drawn proportionally. The blue rays indicate paths from the two slits toward the screen.</p>
+    </section>
+
+    <section class="card">
+      <h2>4. Equations used</h2>
+      <div class="equations">
+        I(θ) = I₀ [sin(β)/β]² cos²(α)<br>
+        α = πd sin(θ) / λ<br>
+        β = πa sin(θ) / λ<br>
+        sin(θ) = y / √(L² + y²)<br>
+        Fringe spacing near centre: Δy ≈ λL/d
+      </div>
+      <p class="note">Here λ is wavelength, d is slit-centre separation, a is individual slit width, L is screen distance, and y is the screen coordinate.</p>
+    </section>
+  </main>
+</div>
+</div>
+
+<section id="theoryTab" class="theory card" hidden>
+  <h2>Young's Double-Slit Experiment: Theory</h2>
+  <p class="note">
+    Young's double-slit experiment demonstrates the wave nature of light. A coherent,
+    monochromatic source illuminates two narrow slits. The waves emerging from the
+    slits overlap on a screen and produce alternating bright and dark fringes.
+  </p>
+
+  <h3>1. Experimental arrangement</h3>
+  <ol>
+    <li>Use a monochromatic coherent light source, such as a laser.</li>
+    <li>Illuminate two narrow slits of width <b>a</b>, separated by centre-to-centre distance <b>d</b>.</li>
+    <li>Place the observation screen at distance <b>L</b> from the slits.</li>
+    <li>Observe the intensity as a function of the screen coordinate <b>y</b>.</li>
+  </ol>
+
+  <h3>2. Interference and diffraction equation</h3>
+  <div class="equation-box">
+    <p><b>Combined intensity:</b></p>
+    <p>I(θ) = I₀ [sin(β) / β]² cos²(α)</p>
+    <p>α = πd sin(θ) / λ</p>
+    <p>β = πa sin(θ) / λ</p>
+    <p>sin(θ) = y / √(L² + y²)</p>
+  </div>
+
+  <h3>3. Meaning of the terms</h3>
+  <ul>
+    <li><b>λ:</b> wavelength of the light.</li>
+    <li><b>d:</b> separation between the centres of the two slits.</li>
+    <li><b>a:</b> width of each slit.</li>
+    <li><b>L:</b> distance between the double slit and the screen.</li>
+    <li><b>y:</b> position measured from the central axis on the screen.</li>
+    <li><b>θ:</b> diffraction/interference observation angle.</li>
+  </ul>
+
+  <h3>4. Fringe spacing</h3>
+  <div class="equation-box">
+    <p><b>Fringe spacing near the centre:</b></p>
+    <p>Δy ≈ λL / d</p>
+  </div>
+  <p class="note">
+    Increasing wavelength or screen distance increases the fringe spacing.
+    Increasing slit separation decreases the fringe spacing. The finite slit width
+    produces a diffraction envelope that controls the overall brightness.
+  </p>
+
+  <h3>5. How to use the simulator</h3>
+  <ol>
+    <li>Open the <b>Live Simulator</b> tab.</li>
+    <li>Change λ, d, a, L, or the screen width using the parameter controls.</li>
+    <li>Observe the intensity curve, coloured screen image, and geometric ray diagram.</li>
+    <li>Change the display mode to view combined intensity, interference, or diffraction separately.</li>
+    <li>Use <b>Save intensity image</b> to export the intensity graph as a PNG image.</li>
+  </ol>
+
+  <h3>6. Model limitations</h3>
+  <p class="note">
+    This is an educational visualization based on the Fraunhofer approximation and
+    idealized coherent illumination. The coloured screen is a visual representation
+    of normalized intensity, not a full electromagnetic simulation.
+  </p>
+</section>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const intensityCanvas = $("intensityCanvas");
+const screenCanvas = $("screenCanvas");
+const slitCanvas = $("slitCanvas");
+const ictx = intensityCanvas.getContext("2d");
+const sctx = screenCanvas.getContext("2d");
+const gctx = slitCanvas.getContext("2d");
+
+const defaults = {lambda:632,d:0.50,a:0.08,L:1.00,screenWidth:70,displayMode:"combined"};
+
+function wavelengthColour(nm){
+  let r=0,g=0,b=0;
+  if(nm>=380 && nm<440){r=-(nm-440)/(440-380);g=0;b=1;}
+  else if(nm<490){r=0;g=(nm-440)/(490-440);b=1;}
+  else if(nm<510){r=0;g=1;b=-(nm-510)/(510-490);}
+  else if(nm<580){r=(nm-510)/(580-510);g=1;b=0;}
+  else if(nm<645){r=1;g=-(nm-645)/(645-580);b=0;}
+  else {r=1;g=0;b=0;}
+  const factor = nm<420 ? .75 : nm>645 ? .75 : 1;
+  return {r:Math.round(255*r*factor),g:Math.round(255*g*factor),b:Math.round(255*b*factor)};
+}
+function colourName(nm){
+  if(nm<450)return "Violet/blue";
+  if(nm<495)return "Blue";
+  if(nm<570)return "Green";
+  if(nm<590)return "Yellow";
+  if(nm<620)return "Orange";
+  return "Red";
+}
+function sinc(x){return Math.abs(x)<1e-10 ? 1 : Math.sin(x)/x;}
+function intensity(y,lambda,d,a,L,mode){
+  const lam=lambda*1e-9, dm=d*1e-3, am=a*1e-3;
+  const theta=Math.atan2(y,L);
+  const st=Math.sin(theta);
+  const alpha=Math.PI*dm*st/lam;
+  const beta=Math.PI*am*st/lam;
+  const inter=Math.pow(Math.cos(alpha),2);
+  const env=Math.pow(sinc(beta),2);
+  if(mode==="interference") return inter;
+  if(mode==="diffraction") return env;
+  return env*inter;
+}
+function clear(ctx,w,h){ctx.clearRect(0,0,w,h);}
+function drawAxes(ctx,w,h,xLabel,yLabel){
+  ctx.strokeStyle="#294762";ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let i=0;i<=5;i++){
+    const x=65+i*(w-95)/5;
+    ctx.moveTo(x,25);ctx.lineTo(x,h-48);
+  }
+  for(let i=0;i<=4;i++){
+    const y=25+i*(h-73)/4;
+    ctx.moveTo(65,y);ctx.lineTo(w-30,y);
+  }
+  ctx.stroke();
+  ctx.fillStyle="#c9d9e8";ctx.font="13px Arial";
+  ctx.fillText(yLabel,12,22);
+  ctx.fillText(xLabel,w/2-55,h-12);
+}
+function drawIntensity(){
+  const w=intensityCanvas.width,h=intensityCanvas.height;
+  const lambda=+$("lambda").value,d=+$("d").value,a=+$("a").value,L=+$("L").value;
+  const width=+$("screenWidth").value,mode=$("displayMode").value;
+  const c=wavelengthColour(lambda);
+  clear(ictx,w,h);ictx.fillStyle="#02060b";ictx.fillRect(0,0,w,h);
+  drawAxes(ictx,w,h,"Screen position y (mm)","Normalized intensity");
+  const left=65,right=w-30,top=25,bottom=h-48;
+  const vals=[];
+  for(let i=0;i<=1000;i++){
+    const y=(-width/2+width*i/1000)*1e-3;
+    vals.push(intensity(y,lambda,d,a,L,mode));
+  }
+  function plot(which,color,dash,widthLine){
+    ictx.beginPath();ictx.setLineDash(dash||[]);ictx.lineWidth=widthLine||2;ictx.strokeStyle=color;
+    vals.forEach((v,i)=>{
+      const x=left+(right-left)*i/1000;
+      const y=bottom-v*(bottom-top);
+      if(i===0)ictx.moveTo(x,y);else ictx.lineTo(x,y);
+    });
+    ictx.stroke();ictx.setLineDash([]);
+  }
+  if(mode==="combined"){
+    const env=[];
+    for(let i=0;i<=1000;i++){
+      const y=(-width/2+width*i/1000)*1e-3;
+      env.push(Math.pow(sinc(Math.PI*a*1e-3*Math.sin(Math.atan2(y,L))/(lambda*1e-9)),2));
+    }
+    ictx.beginPath();ictx.strokeStyle="#55d9ff";ictx.lineWidth=2;ictx.setLineDash([8,6]);
+    env.forEach((v,i)=>{const x=left+(right-left)*i/1000,y=bottom-v*(bottom-top);if(i===0)ictx.moveTo(x,y);else ictx.lineTo(x,y);});
+    ictx.stroke();ictx.setLineDash([]);
+  }
+  plot("main",`rgb(${c.r},${c.g},${c.b})`,[],3);
+  ictx.fillStyle="#c9d9e8";ictx.font="12px Arial";
+  for(let i=0;i<=4;i++){
+    const v=i/4;const y=bottom-v*(bottom-top);
+    ictx.fillText(v.toFixed(1),30,y+4);
+  }
+  for(let i=0;i<=4;i++){
+    const x=left+(right-left)*i/4;
+    const val=-width/2+width*i/4;
+    ictx.fillText(val.toFixed(0),x-10,bottom+20);
+  }
+  $("dotCombined").style.background=`rgb(${c.r},${c.g},${c.b})`;
+  $("dotEnvelope").style.background="#55d9ff";
+  $("dotInterference").style.background="#ff8bea";
+  const fringe=(lambda*1e-9*L/(d*1e-3))*1000;
+  const minimum=(lambda*1e-9*L/(a*1e-3))*1000;
+  $("fringe").textContent=fringe.toFixed(2)+" mm";
+  $("minimum").textContent=minimum.toFixed(2)+" mm";
+  $("colourName").textContent=colourName(lambda);
+}
+function drawScreen(){
+  const w=screenCanvas.width,h=screenCanvas.height;
+  const lambda=+$("lambda").value,d=+$("d").value,a=+$("a").value,L=+$("L").value;
+  const width=+$("screenWidth").value,mode=$("displayMode").value;
+  const c=wavelengthColour(lambda);
+  clear(sctx,w,h);
+  const img=sctx.createImageData(w,h);
+  for(let x=0;x<w;x++){
+    const y=(-width/2+width*x/(w-1))*1e-3;
+    let I=intensity(y,lambda,d,a,L,mode);
+    I=Math.pow(Math.max(0,Math.min(1,I)),0.48);
+    for(let yy=0;yy<h;yy++){
+      const edge=0.82+0.18*Math.sin(yy/h*Math.PI);
+      const idx=(yy*w+x)*4;
+      img.data[idx]=Math.min(255,c.r*I*edge);
+      img.data[idx+1]=Math.min(255,c.g*I*edge);
+      img.data[idx+2]=Math.min(255,c.b*I*edge);
+      img.data[idx+3]=255;
+    }
+  }
+  sctx.putImageData(img,0,0);
+  sctx.fillStyle="rgba(255,255,255,.85)";
+  sctx.font="14px Arial";
+  sctx.fillText("Simulated screen appearance",20,24);
+}
+function drawSlits(){
+  const w = slitCanvas.width;
+  const h = slitCanvas.height;
+
+  const lambda = +$("lambda").value;
+  const d = +$("d").value;
+  const a = +$("a").value;
+  const L = +$("L").value;
+  const screenWidth = +$("screenWidth").value;
+  const c = wavelengthColour(lambda);
+
+  clear(gctx, w, h);
+  gctx.fillStyle = "#02060b";
+  gctx.fillRect(0, 0, w, h);
+
+  const slitX = 150;
+  const center = h / 2;
+
+  // Normalize the parameters.
+  const Lmin = +$("L").min;
+  const Lmax = +$("L").max;
+  const dmin = +$("d").min;
+  const dmax = +$("d").max;
+  const amin = +$("a").min;
+  const amax = +$("a").max;
+
+  const Lfraction = (L - Lmin) / (Lmax - Lmin);
+  const dFraction = (d - dmin) / (dmax - dmin);
+  const aFraction = (a - amin) / (amax - amin);
+
+  // L now changes the actual horizontal position of the screen.
+  const screenX = slitX + 180 + Lfraction * (w - slitX - 250);
+
+  // d changes the vertical separation between the slit centres.
+  const separation = 25 + dFraction * 155;
+
+  // a changes the opening size of each slit.
+  const opening = 5 + aFraction * 35;
+
+  const slit1 = center - separation / 2;
+  const slit2 = center + separation / 2;
+
+  // Screen width controls the vertical size of the illuminated screen area.
+  const screenFraction = (screenWidth - 10) / (120 - 10);
+  const screenHalfHeight = 45 + screenFraction * (h * 0.42);
+  const screenTop = center - screenHalfHeight;
+  const screenBottom = center + screenHalfHeight;
+
+  // Draw the barrier with two openings.
+  gctx.strokeStyle = "#dcecff";
+  gctx.lineWidth = 4;
+  gctx.beginPath();
+  gctx.moveTo(slitX, 25);
+  gctx.lineTo(slitX, slit1 - opening / 2);
+  gctx.moveTo(slitX, slit1 + opening / 2);
+  gctx.lineTo(slitX, slit2 - opening / 2);
+  gctx.moveTo(slitX, slit2 + opening / 2);
+  gctx.lineTo(slitX, h - 25);
+  gctx.stroke();
+
+  // Coloured slit openings.
+  gctx.fillStyle = `rgb(${c.r},${c.g},${c.b})`;
+  gctx.shadowColor = `rgb(${c.r},${c.g},${c.b})`;
+  gctx.shadowBlur = 14;
+  gctx.fillRect(slitX - 6, slit1 - opening / 2, 12, opening);
+  gctx.fillRect(slitX - 6, slit2 - opening / 2, 12, opening);
+  gctx.shadowBlur = 0;
+
+  // Screen position and screen width both update live.
+  gctx.strokeStyle = "#dcecff";
+  gctx.lineWidth = 4;
+  gctx.beginPath();
+  gctx.moveTo(screenX, screenTop);
+  gctx.lineTo(screenX, screenBottom);
+  gctx.stroke();
+
+  // The ray spread changes with screenWidth and L.
+  const raySpread = Math.min(
+    screenHalfHeight * 1.65,
+    35 + screenWidth * 1.15 + (Lmax - L) * 7
+  );
+
+  const rayCount = 15;
+  gctx.strokeStyle = `rgba(${c.r},${c.g},${c.b},0.95)`;
+  gctx.lineWidth = 1.4;
+
+  for(let i = 0; i < rayCount; i++){
+    const yy = center - raySpread / 2 +
+               raySpread * i / (rayCount - 1);
+
+    gctx.beginPath();
+    gctx.moveTo(slitX, slit1);
+    gctx.lineTo(screenX, yy);
+    gctx.stroke();
+
+    gctx.beginPath();
+    gctx.moveTo(slitX, slit2);
+    gctx.lineTo(screenX, yy);
+    gctx.stroke();
+  }
+
+  // Central axis.
+  gctx.strokeStyle = "rgba(255,255,255,0.55)";
+  gctx.lineWidth = 1;
+  gctx.setLineDash([5,5]);
+  gctx.beginPath();
+  gctx.moveTo(slitX, center);
+  gctx.lineTo(screenX, center);
+  gctx.stroke();
+  gctx.setLineDash([]);
+
+  // Dimension marker for d.
+  const markerX = slitX - 38;
+  gctx.strokeStyle = "#ffcf66";
+  gctx.lineWidth = 2;
+  gctx.setLineDash([5,5]);
+  gctx.beginPath();
+  gctx.moveTo(markerX, slit1);
+  gctx.lineTo(markerX, slit2);
+  gctx.stroke();
+  gctx.setLineDash([]);
+
+  // Labels.
+  gctx.fillStyle = "#ffcf66";
+  gctx.font = "14px Arial";
+  gctx.fillText("d = " + d.toFixed(2) + " mm", 18, center - 12);
+
+  gctx.fillStyle = "#c9d9e8";
+  gctx.font = "14px Arial";
+  gctx.fillText("Double slit", slitX - 38, 18);
+  gctx.fillText("Screen", screenX - 25, Math.max(18, screenTop - 10));
+  gctx.fillText("L = " + L.toFixed(2) + " m", (slitX + screenX) / 2 - 35, h - 18);
+
+  gctx.fillStyle = `rgb(${c.r},${c.g},${c.b})`;
+  gctx.fillText("a = " + a.toFixed(2) + " mm", slitX + 20, h - 18);
+
+  gctx.fillStyle = "#9fc7e8";
+  gctx.font = "12px Arial";
+  gctx.fillText("Screen position: " + Math.round(screenX) + " px", 18, h - 42);
+  gctx.fillText("Screen width: " + screenWidth.toFixed(0) + " mm", 18, h - 27);
+}
+function updateLabels(){
+  $("lambdaValue").textContent=$("lambda").value+" nm";
+  $("dValue").textContent=(+$("d").value).toFixed(2)+" mm";
+  $("aValue").textContent=(+$("a").value).toFixed(2)+" mm";
+  $("LValue").textContent=(+$("L").value).toFixed(2)+" m";
+  $("widthValue").textContent=$("screenWidth").value+" mm";
+}
+function render(){updateLabels();drawIntensity();drawScreen();drawSlits();}
+["lambda","d","a","L","screenWidth","displayMode"].forEach(id=>$(id).addEventListener("input",render));
+$("reset").addEventListener("click",()=>{
+  Object.keys(defaults).forEach(k=>$(k).value=defaults[k]);
+  render();
+});
+$("download").addEventListener("click",()=>{
+  const link=document.createElement("a");
+  link.download="double-slit-intensity.png";
+  link.href=intensityCanvas.toDataURL("image/png");
+  link.click();
+});
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click", () => {
+    const selected = button.dataset.tab;
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.classList.toggle("active", btn === button);
+    });
+    $("simulatorTab").hidden = selected !== "simulator";
+    $("theoryTab").hidden = selected !== "theory";
+    window.scrollTo({top: 0, behavior: "smooth"});
+  });
+});
+
+render();
+</script>
+</body>
+</html>
