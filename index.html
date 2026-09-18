@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Young's Double-Slit Interference Calculator</title>
+<style>
+:root{
+  --bg:#f4f7fb; --card:#ffffff; --ink:#172033; --muted:#607089;
+  --primary:#2563eb; --primary-dark:#1d4ed8; --line:#d9e2ef;
+  --accent:#0f766e; --soft:#eaf1ff;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:linear-gradient(135deg,#173b8f,#2563eb);color:#fff;padding:34px 20px}
+header .wrap,main{max-width:1100px;margin:auto}
+h1{margin:0 0 8px;font-size:clamp(26px,4vw,42px)}
+header p{margin:0;max-width:780px;opacity:.92}
+main{padding:24px 16px 40px}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 8px 24px rgba(20,45,90,.06)}
+h2{font-size:21px;margin:0 0 16px}
+h3{font-size:16px;margin:20px 0 8px}
+label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}
+input,select,button{font:inherit}
+input{width:100%;padding:10px 11px;border:1px solid #bdcadd;border-radius:9px;background:#fff;color:var(--ink)}
+.unit{display:grid;grid-template-columns:1fr 88px;gap:8px}
+button{border:0;border-radius:10px;padding:11px 15px;cursor:pointer;font-weight:700}
+.primary{background:var(--primary);color:white;width:100%;margin-top:18px}
+.primary:hover{background:var(--primary-dark)}
+.secondary{background:var(--soft);color:var(--primary);margin-top:10px;width:100%}
+.note{font-size:13px;color:var(--muted);margin-top:12px}
+.results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.metric{background:#f0f7f6;border:1px solid #cbe6df;border-radius:12px;padding:13px}
+.metric span{display:block;font-size:12px;color:var(--muted)}
+.metric strong{display:block;font-size:20px;color:var(--accent);margin-top:4px;word-break:break-word}
+canvas{display:block;width:100%;height:360px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:9px}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px}
+.formula{background:#f8fafc;border-left:4px solid var(--primary);padding:12px 14px;border-radius:8px;font-family:Georgia,serif;margin-top:16px}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px}
+td,th{border-bottom:1px solid var(--line);padding:9px;text-align:left}
+th{background:#f8fafc}
+footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 25px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.results{grid-template-columns:1fr}.card{padding:17px}canvas{height:290px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Young's Double-Slit Experiment</h1>
+    <p>Interactive physics calculator: enter the wavelength, slit separation, screen distance and intensity to visualize the interference pattern.</p>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2>Experiment parameters</h2>
+
+      <label for="wavelength">Wavelength (λ)</label>
+      <div class="unit">
+        <input id="wavelength" type="number" value="600" min="0.001" step="any">
+        <select id="wavelengthUnit">
+          <option value="1e-9" selected>nm</option>
+          <option value="1e-6">µm</option>
+          <option value="0.001">mm</option>
+          <option value="1">m</option>
+        </select>
+      </div>
+
+      <label for="separation">Slit separation (d)</label>
+      <div class="unit">
+        <input id="separation" type="number" value="0.5" min="0.000001" step="any">
+        <select id="separationUnit">
+          <option value="0.001" selected>mm</option>
+          <option value="1e-6">µm</option>
+          <option value="1e-3">mm</option>
+          <option value="1">m</option>
+        </select>
+      </div>
+
+      <label for="distance">Screen distance (L)</label>
+      <div class="unit">
+        <input id="distance" type="number" value="2" min="0.000001" step="any">
+        <select id="distanceUnit">
+          <option value="1" selected>m</option>
+          <option value="0.01">cm</option>
+          <option value="0.001">mm</option>
+        </select>
+      </div>
+
+      <label for="intensity">Maximum intensity (I₀)</label>
+      <div class="unit">
+        <input id="intensity" type="number" value="1" min="0" step="any">
+        <select id="intensityUnit">
+          <option value="1" selected>arb.</option>
+        </select>
+      </div>
+
+      <label for="range">Plot half-width on screen</label>
+      <div class="unit">
+        <input id="range" type="number" value="12" min="0.1" step="any">
+        <select id="rangeUnit">
+          <option value="0.001" selected>mm</option>
+          <option value="0.01">cm</option>
+          <option value="1">m</option>
+        </select>
+      </div>
+
+      <label for="points">Sampling points</label>
+      <input id="points" type="number" value="1200" min="200" max="5000" step="100">
+
+      <button class="primary" onclick="calculate()">Calculate interference pattern</button>
+      <button class="secondary" onclick="resetDefaults()">Reset values</button>
+
+      <div class="formula">
+        <b>Intensity:</b><br>
+        I(y) = I₀ cos²(πdy / λL)
+        <br><br>
+        <b>Fringe width:</b><br>
+        β = λL / d
+      </div>
+      <p class="note">Assumption: monochromatic light, equal slit intensities and the small-angle approximation.</p>
+    </section>
+
+    <section class="card">
+      <h2>Calculated results</h2>
+      <div class="results">
+        <div class="metric"><span>Fringe width β</span><strong id="beta">—</strong></div>
+        <div class="metric"><span>Bright fringe spacing</span><strong id="bright">—</strong></div>
+        <div class="metric"><span>Dark fringe spacing</span><strong id="dark">—</strong></div>
+      </div>
+
+      <h2>Interference intensity I(y)</h2>
+      <canvas id="plot" width="900" height="360"></canvas>
+      <div class="legend">
+        <span><span class="dot" style="background:#2563eb"></span>Intensity</span>
+        <span><span class="dot" style="background:#d97706"></span>Central maximum at y = 0</span>
+      </div>
+
+      <h3>Selected fringe positions</h3>
+      <div id="fringeTable"></div>
+    </section>
+  </div>
+</main>
+
+<footer>Physics Learning Hub · Young's double-slit interference calculator</footer>
+
+<script>
+function getValue(id){ return Number(document.getElementById(id).value); }
+function unitValue(id){ return Number(document.getElementById(id).value); }
+function formatLength(m){
+  const a=Math.abs(m);
+  if(a>=1) return (m).toPrecision(5)+" m";
+  if(a>=1e-2) return (m*100).toPrecision(5)+" cm";
+  if(a>=1e-3) return (m*1000).toPrecision(5)+" mm";
+  if(a>=1e-6) return (m*1e6).toPrecision(5)+" µm";
+  return (m*1e9).toPrecision(5)+" nm";
+}
+function calculate(){
+  const lambda=getValue("wavelength")*unitValue("wavelengthUnit");
+  const d=getValue("separation")*unitValue("separationUnit");
+  const L=getValue("distance")*unitValue("distanceUnit");
+  const I0=getValue("intensity");
+  const halfRange=getValue("range")*unitValue("rangeUnit");
+  const n=Math.min(5000,Math.max(200,Math.floor(getValue("points"))));
+
+  if(!(lambda>0 && d>0 && L>0 && I0>=0 && halfRange>0)){
+    alert("Please enter positive values for wavelength, slit separation, distance and plot range.");
+    return;
+  }
+
+  const beta=lambda*L/d;
+  document.getElementById("beta").textContent=formatLength(beta);
+  document.getElementById("bright").textContent=formatLength(beta);
+  document.getElementById("dark").textContent=formatLength(beta);
+
+  drawPlot(lambda,d,L,I0,halfRange,n);
+  makeTable(beta,halfRange);
+}
+function drawPlot(lambda,d,L,I0,halfRange,n){
+  const canvas=document.getElementById("plot");
+  const ctx=canvas.getContext("2d");
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const left=68,right=24,top=22,bottom=50;
+  const pw=W-left-right,ph=H-top-bottom;
+  const xToPx=x=>left+(x+halfRange)/(2*halfRange)*pw;
+  const yToPx=y=>top+(1-y)*ph;
+
+  ctx.strokeStyle="#d9e2ef";ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const yy=top+i*ph/5;
+    ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(W-right,yy);ctx.stroke();
+  }
+  for(let i=0;i<=6;i++){
+    const xx=left+i*pw/6;
+    ctx.beginPath();ctx.moveTo(xx,top);ctx.lineTo(xx,H-bottom);ctx.stroke();
+  }
+
+  ctx.strokeStyle="#65758b";ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,H-bottom);ctx.lineTo(W-right,H-bottom);ctx.stroke();
+
+  ctx.fillStyle="#42526a";ctx.font="13px Arial";
+  ctx.textAlign="right";
+  for(let i=0;i<=5;i++){
+    const val=1-i/5;
+    ctx.fillText(val.toFixed(1),left-10,top+i*ph/5+4);
+  }
+  ctx.textAlign="center";
+  for(let i=0;i<=6;i++){
+    const x=-halfRange+2*halfRange*i/6;
+    ctx.fillText((x*1000).toFixed(2),xToPx(x),H-bottom+21);
+  }
+  ctx.fillText("Position y (mm)",left+pw/2,H-10);
+  ctx.save();ctx.translate(16,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText("Normalized intensity",0,0);ctx.restore();
+
+  ctx.strokeStyle="#2563eb";ctx.lineWidth=2.4;ctx.beginPath();
+  for(let i=0;i<=n;i++){
+    const x=-halfRange+2*halfRange*i/n;
+    const phase=Math.PI*d*x/(lambda*L);
+    const intensity=Math.pow(Math.cos(phase),2);
+    const px=xToPx(x),py=yToPx(intensity);
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  const cx=xToPx(0);
+  ctx.strokeStyle="#d97706";ctx.setLineDash([5,5]);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(cx,top);ctx.lineTo(cx,H-bottom);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle="#d97706";ctx.textAlign="center";ctx.fillText("central maximum",cx,top+13);
+}
+function makeTable(beta,halfRange){
+  let html="<table><tr><th>Order</th><th>Bright position y = mβ</th><th>Dark position y = (m+½)β</th></tr>";
+  const maxM=Math.min(5,Math.floor(halfRange/beta));
+  for(let m=0;m<=maxM;m++){
+    const bright=m*beta;
+    const dark=(m+0.5)*beta;
+    html+="<tr><td>"+m+"</td><td>± "+formatLength(bright)+"</td><td>± "+formatLength(dark)+"</td></tr>";
+  }
+  html+="</table>";
+  document.getElementById("fringeTable").innerHTML=html;
+}
+function resetDefaults(){
+  document.getElementById("wavelength").value=600;
+  document.getElementById("wavelengthUnit").value="1e-9";
+  document.getElementById("separation").value=0.5;
+  document.getElementById("separationUnit").value="0.001";
+  document.getElementById("distance").value=2;
+  document.getElementById("distanceUnit").value="1";
+  document.getElementById("intensity").value=1;
+  document.getElementById("range").value=12;
+  document.getElementById("rangeUnit").value="0.001";
+  document.getElementById("points").value=1200;
+  calculate();
+}
+calculate();
+</script>
+</body>
+</html>
